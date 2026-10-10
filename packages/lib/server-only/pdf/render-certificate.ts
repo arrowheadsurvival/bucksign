@@ -36,6 +36,10 @@ export type CertificateRecipient = {
   signatureField?: Pick<Field, 'id' | 'secondaryId' | 'recipientId'> & {
     signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
   };
+  /** (10-10) adopted initials: a base64 PNG or typed text */
+  initials?: string | null;
+  /** (10-10) filled every initials box at once ("Initial all") */
+  initialedAll?: { count: number; at: Date; ipAddress: string | null } | null;
   authLevel: string;
   logs: {
     emailed: BaseAuditLog | null;
@@ -375,6 +379,61 @@ const renderColumnTwo = (options: RenderColumnOptions) => {
       wrap: 'char',
     });
     column.add(sigIdValue);
+
+    // (10-10) the initials they adopted
+    if (recipient.initials && !isRejected) {
+      const iniLabel = new Konva.Text({
+        x: 0,
+        y: column.getClientRect().height + 6,
+        text: 'Initials:',
+        fill: textMutedForeground,
+        width: columnWidth,
+        fontFamily: 'Inter',
+        fontSize: textSm,
+        fontStyle: fontMedium,
+        lineHeight: 1.4,
+      });
+      column.add(iniLabel);
+      const top = column.getClientRect().height + 2;
+
+      if (recipient.initials.startsWith('data:image/png;base64,')) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        const img = new SkiaImage(recipient.initials) as unknown as HTMLImageElement;
+        const h = 24;
+        const w = Math.min(60, h * (img.width / Math.max(1, img.height)));
+        column.add(
+          new Konva.Image({ image: img, x: 0, y: top, width: w, height: w * (img.height / Math.max(1, img.width)) }),
+        );
+      } else {
+        column.add(
+          new Konva.Text({
+            x: 0,
+            y: top,
+            text: recipient.initials,
+            fontFamily: getSignatureFontFamily(recipient.initials),
+            fontSize: 16,
+          }),
+        );
+      }
+
+      if (recipient.initialedAll) {
+        const at = DateTime.fromJSDate(recipient.initialedAll.at)
+          .setLocale(APP_I18N_OPTIONS.defaultLocale)
+          .toFormat('yyyy-MM-dd hh:mm:ss a (ZZZZ)');
+        column.add(
+          new Konva.Text({
+            x: 0,
+            y: column.getClientRect().height + 4,
+            text: `Initialed all ${recipient.initialedAll.count} boxes at once — ${at}${recipient.initialedAll.ipAddress ? `, IP ${recipient.initialedAll.ipAddress}` : ''}`,
+            fill: textMutedForeground,
+            width: columnWidth,
+            fontFamily: 'Inter',
+            fontSize: textSm,
+            lineHeight: 1.4,
+          }),
+        );
+      }
+    }
   } else {
     const naText = new Konva.Text({
       x: 0,

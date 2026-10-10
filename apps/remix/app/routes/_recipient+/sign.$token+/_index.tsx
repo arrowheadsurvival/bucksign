@@ -38,6 +38,7 @@ import { getOptionalLoaderContext } from 'server/utils/get-loader-session';
 import { match } from 'ts-pattern';
 
 import { Header as AuthenticatedHeader } from '~/components/general/app-header';
+import { CloseTabButton } from '~/components/general/close-tab-button';
 import { CscRecipientBlockedPage } from '~/components/general/document-signing/csc-recipient-blocked-page';
 import { CscRecipientSigningInProgressPage } from '~/components/general/document-signing/csc-recipient-signing-in-progress-page';
 import { DocumentSigningAuthPageView } from '~/components/general/document-signing/document-signing-auth-page';
@@ -49,7 +50,6 @@ import { EnvelopeSigningProvider } from '~/components/general/document-signing/e
 import { RecipientBranding } from '~/components/general/recipient-branding';
 import { useCspNonce } from '~/utils/nonce';
 import { superLoaderJson, useSuperLoaderData } from '~/utils/super-json-loader';
-
 import type { Route } from './+types/_index';
 
 const handleV1Loader = async ({ params, request }: Route.LoaderArgs) => {
@@ -447,9 +447,9 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
           </p>
 
           {user ? (
-            <Link to="/" className="mt-36 text-documenso-700 hover:text-documenso-600">
-              <Trans>Go Back Home</Trans>
-            </Link>
+            <div className="mt-36">
+              <CloseTabButton />
+            </div>
           ) : (
             <p className="mt-36 text-muted-foreground/60 text-sm">
               <Trans>
@@ -546,9 +546,9 @@ const SigningPageV2 = ({ data }: { data: Awaited<ReturnType<typeof handleV2Loade
           </p>
 
           {user ? (
-            <Link to="/" className="mt-36 text-documenso-700 hover:text-documenso-600">
-              <Trans>Go Back Home</Trans>
-            </Link>
+            <div className="mt-36">
+              <CloseTabButton />
+            </div>
           ) : (
             <p className="mt-36 text-muted-foreground/60 text-sm">
               <Trans>

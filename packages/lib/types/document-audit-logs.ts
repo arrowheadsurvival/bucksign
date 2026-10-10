@@ -377,6 +377,8 @@ export const ZDocumentAuditLogEventDocumentFieldInsertedSchema = z.object({
         })
         .optional(),
     ),
+    /** (10-10) filled by "Initial all" */
+    bulkInitials: z.boolean().optional(),
   }),
 });
 

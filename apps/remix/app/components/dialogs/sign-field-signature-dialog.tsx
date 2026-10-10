@@ -15,6 +15,8 @@ export type SignFieldSignatureDialogProps = {
   drawSignatureEnabled?: boolean;
   /** (10-08) re-signing a placed signature — the new one replaces every signature box of this signer. */
   redraw?: boolean;
+  /** (10-10) the same pad adopts the signer's INITIALS (drawn, typed or uploaded) */
+  kind?: 'signature' | 'initials';
 };
 
 export const SignFieldSignatureDialog = createCallable<SignFieldSignatureDialogProps, string | null>(
@@ -26,7 +28,9 @@ export const SignFieldSignatureDialog = createCallable<SignFieldSignatureDialogP
     drawSignatureEnabled,
     initialSignature,
     redraw,
+    kind = 'signature',
   }) => {
+    const isInitials = kind === 'initials';
     const [localSignature, setLocalSignature] = useState(initialSignature);
 
     return (
@@ -35,11 +39,25 @@ export const SignFieldSignatureDialog = createCallable<SignFieldSignatureDialogP
           <div>
             <DialogHeader>
               <DialogTitle data-testid="tf-signature-title">
-                {redraw ? 'Redraw your signature' : <Trans>Sign Signature Field</Trans>}
+                {isInitials ? (
+                  redraw ? (
+                    'Redraw your initials'
+                  ) : (
+                    'Your initials'
+                  )
+                ) : redraw ? (
+                  'Redraw your signature'
+                ) : (
+                  <Trans>Sign Signature Field</Trans>
+                )}
               </DialogTitle>
-              {redraw && (
+              {(redraw || isInitials) && (
                 <p className="text-muted-foreground text-sm">
-                  Your new signature replaces it everywhere you've signed on this document.
+                  {isInitials
+                    ? redraw
+                      ? "Your new initials replace them everywhere you've initialled on this document."
+                      : 'Draw, type or upload your initials. They go in every initials box on this document.'
+                    : "Your new signature replaces it everywhere you've signed on this document."}
                 </p>
               )}
             </DialogHeader>
@@ -51,6 +69,7 @@ export const SignFieldSignatureDialog = createCallable<SignFieldSignatureDialogP
               typedSignatureEnabled={typedSignatureEnabled}
               uploadSignatureEnabled={uploadSignatureEnabled}
               drawSignatureEnabled={drawSignatureEnabled}
+              kind={kind}
             />
           </div>
 
@@ -67,7 +86,17 @@ export const SignFieldSignatureDialog = createCallable<SignFieldSignatureDialogP
               disabled={!localSignature}
               onClick={() => call.end(localSignature || null)}
             >
-              {redraw ? 'Use this signature' : <Trans>Sign</Trans>}
+              {redraw ? (
+                isInitials ? (
+                  'Use these initials'
+                ) : (
+                  'Use this signature'
+                )
+              ) : isInitials ? (
+                'Use these initials'
+              ) : (
+                <Trans>Sign</Trans>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

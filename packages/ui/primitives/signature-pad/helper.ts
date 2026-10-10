@@ -6,7 +6,13 @@ import type { RefObject } from 'react';
  * valid, by measuring the percentage of non-transparent pixels against
  * SIGNATURE_MIN_COVERAGE_THRESHOLD.
  */
-export const checkSignatureValidity = (element: RefObject<HTMLCanvasElement | null>) => {
+/** (10-10) initials: a fifth of a signature's minimum ink */
+export const INITIALS_MIN_COVERAGE = SIGNATURE_MIN_COVERAGE_THRESHOLD / 5;
+
+export const checkSignatureValidity = (
+  element: RefObject<HTMLCanvasElement | null>,
+  minCoverage: number = SIGNATURE_MIN_COVERAGE_THRESHOLD,
+) => {
   if (!element.current) {
     return false;
   }
@@ -29,7 +35,7 @@ export const checkSignatureValidity = (element: RefObject<HTMLCanvasElement | nu
   }
 
   const filledPercentage = filledPixels / totalPixels;
-  const isValid = filledPercentage > SIGNATURE_MIN_COVERAGE_THRESHOLD;
+  const isValid = filledPercentage > minCoverage;
 
   return isValid;
 };

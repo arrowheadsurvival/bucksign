@@ -52,6 +52,8 @@ export const ZSignEnvelopeFieldRequestSchema = z.object({
   fieldId: z.number(),
   fieldValue: ZSignEnvelopeFieldValue,
   authOptions: ZRecipientActionAuthSchema.optional(),
+  /** (10-10) this initials box was filled by "Initial all" — recorded on the audit log and the certificate */
+  bulkInitials: z.boolean().optional(),
 });
 
 export const ZSignEnvelopeFieldResponseSchema = z.object({

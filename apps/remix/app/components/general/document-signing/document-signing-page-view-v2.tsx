@@ -23,6 +23,7 @@ import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-d
 import { SignFieldCheckboxDialog } from '~/components/dialogs/sign-field-checkbox-dialog';
 import { SignFieldDropdownDialog } from '~/components/dialogs/sign-field-dropdown-dialog';
 import { SignFieldEmailDialog } from '~/components/dialogs/sign-field-email-dialog';
+import { SignFieldInitialAllDialog } from '~/components/dialogs/sign-field-initial-all-dialog';
 import { SignFieldInitialsDialog } from '~/components/dialogs/sign-field-initials-dialog';
 import { SignFieldNameDialog } from '~/components/dialogs/sign-field-name-dialog';
 import { SignFieldNumberDialog } from '~/components/dialogs/sign-field-number-dialog';
@@ -37,8 +38,10 @@ import { AutoFillNames } from '~/components/general/typed-fields/auto-fill-names
 import { BrandingLogo } from '../branding-logo';
 import { DocumentSigningAttachmentsPopover } from '../document-signing/document-signing-attachments-popover';
 import { EnvelopeItemSelector } from '../envelope-editor/envelope-file-selector';
+import { EnvelopeAdoptDialog } from '../envelope-signing/envelope-adopt-dialog';
 import EnvelopeSignerForm from '../envelope-signing/envelope-signer-form';
 import { EnvelopeSignerHeader } from '../envelope-signing/envelope-signer-header';
+import { EnvelopeStartOverDialog } from '../envelope-signing/envelope-start-over-dialog';
 import { DocumentSigningMobileWidget } from './document-signing-mobile-widget';
 import { DocumentSigningRejectDialog } from './document-signing-reject-dialog';
 import { useRequiredEnvelopeSigningContext } from './envelope-signing-provider';
@@ -89,10 +92,12 @@ export const DocumentSigningPageViewV2 = () => {
       <SignFieldNumberDialog.Root />
       <SignFieldNameDialog.Root />
       <SignFieldInitialsDialog.Root />
+      <SignFieldInitialAllDialog.Root />
       <SignFieldDropdownDialog.Root />
       <SignFieldSignatureDialog.Root />
       <SignFieldCheckboxDialog.Root />
       <AutoFillNames />
+      <EnvelopeAdoptDialog />
 
       <EnvelopeSignerHeader />
 
@@ -196,6 +201,8 @@ export const DocumentSigningPageViewV2 = () => {
                     </Button>
                   }
                 />
+
+                <EnvelopeStartOverDialog />
 
                 {envelope.type === EnvelopeType.DOCUMENT && allowDocumentRejection && (
                   <DocumentSigningRejectDialog

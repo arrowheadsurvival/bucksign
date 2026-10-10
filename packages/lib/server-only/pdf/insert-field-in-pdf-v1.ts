@@ -27,7 +27,20 @@ import {
 } from '../../types/field-meta';
 import { getPageSize } from './get-page-size';
 
-export const insertFieldInPDFV1 = async (pdf: PDFDocument, field: FieldWithSignature) => {
+export const insertFieldInPDFV1 = async (pdf: PDFDocument, inputField: FieldWithSignature) => {
+  // (10-10) adopted initials can be a drawn/uploaded image — stamp them like a signature image, never as text
+  const field: FieldWithSignature =
+    inputField.type === FieldType.INITIALS && inputField.customText.startsWith('data:image/png;base64,')
+      ? {
+          ...inputField,
+          type: FieldType.SIGNATURE,
+          signature: {
+            signatureImageAsBase64: inputField.customText,
+            typedSignature: null,
+          } as FieldWithSignature['signature'],
+        }
+      : inputField;
+
   const [fontCaveat, fontNoto] = await Promise.all([
     fetch(`${NEXT_PRIVATE_INTERNAL_WEBAPP_URL()}/fonts/caveat.ttf`).then(async (res) => res.arrayBuffer()),
     fetch(`${NEXT_PRIVATE_INTERNAL_WEBAPP_URL()}/fonts/noto-sans.ttf`).then(async (res) => res.arrayBuffer()),

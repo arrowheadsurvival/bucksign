@@ -9,7 +9,7 @@ import type { MouseEvent, PointerEvent, TouchEvent } from 'react';
 import { useMemo, useRef, useState } from 'react';
 
 import { cn } from '../../lib/utils';
-import { checkSignatureValidity, getSvgPathFromStroke } from './helper';
+import { checkSignatureValidity, getSvgPathFromStroke, INITIALS_MIN_COVERAGE } from './helper';
 import { Point } from './point';
 import { SignaturePadColorPicker } from './signature-pad-color-picker';
 
@@ -17,6 +17,8 @@ export type SignaturePadDrawProps = {
   className?: string;
   value: string;
   onChange: (_signatureDataUrl: string) => void;
+  /** (10-10) initials are small marks — they need far less ink than a signature to count */
+  kind?: 'signature' | 'initials';
 };
 
 /**
@@ -74,7 +76,13 @@ const trimmedDataUrl = (canvas: HTMLCanvasElement): string => {
   return out.toDataURL();
 };
 
-export const SignaturePadDraw = ({ className, value, onChange, ...props }: SignaturePadDrawProps) => {
+export const SignaturePadDraw = ({
+  className,
+  value,
+  onChange,
+  kind = 'signature',
+  ...props
+}: SignaturePadDrawProps) => {
   const { t } = useLingui();
 
   const $el = useRef<HTMLCanvasElement>(null);
@@ -185,7 +193,7 @@ export const SignaturePadDraw = ({ className, value, onChange, ...props }: Signa
           ctx.fill(pathData);
         });
 
-        const isValidSignature = checkSignatureValidity($el);
+        const isValidSignature = checkSignatureValidity($el, kind === 'initials' ? INITIALS_MIN_COVERAGE : undefined);
 
         setIsSignatureValid(isValidSignature);
 
@@ -327,7 +335,7 @@ export const SignaturePadDraw = ({ className, value, onChange, ...props }: Signa
           className="rounded-full p-0 text-[0.688rem] text-muted-foreground/60 ring-offset-background hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => onClearClick()}
         >
-          <Trans>Clear Signature</Trans>
+          {kind === 'initials' ? 'Clear initials' : <Trans>Clear Signature</Trans>}
         </button>
       </div>
 
@@ -338,7 +346,7 @@ export const SignaturePadDraw = ({ className, value, onChange, ...props }: Signa
           })}
         >
           <span className="text-destructive text-xs">
-            <Trans>Signature is too small</Trans>
+            {kind === 'initials' ? 'Initials are too small' : <Trans>Signature is too small</Trans>}
           </span>
         </div>
       )}

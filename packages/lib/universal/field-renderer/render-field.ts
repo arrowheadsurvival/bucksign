@@ -3,6 +3,8 @@ import { FieldType } from '@prisma/client';
 import type Konva from 'konva';
 import { match } from 'ts-pattern';
 
+import { isBase64Image } from '../../constants/signatures';
+
 import type { FieldCanvasStyleCache } from './field-canvas-style';
 import { resolveFieldCanvasStyle } from './field-canvas-style';
 import type { FieldRenderMode, FieldToRender } from './field-renderer';
@@ -57,16 +59,32 @@ export const renderField = ({
   };
 
   // If the generic text field element array changes, update the `GenericTextFieldTypeMetas` type
-  return match(field.type)
-    .with(FieldType.INITIALS, FieldType.NAME, FieldType.EMAIL, FieldType.DATE, FieldType.TEXT, FieldType.NUMBER, () =>
-      renderGenericTextFieldElement(field, options),
-    )
-    .with(FieldType.CHECKBOX, () => renderCheckboxFieldElement(field, options))
-    .with(FieldType.RADIO, () => renderRadioFieldElement(field, options))
-    .with(FieldType.DROPDOWN, () => renderDropdownFieldElement(field, options))
-    .with(FieldType.SIGNATURE, () => renderSignatureFieldElement(field, options))
-    .with(FieldType.FREE_SIGNATURE, () => {
-      throw new Error('Free signature fields are not supported');
-    })
-    .exhaustive();
+  return (
+    match(field.type)
+      // (10-10) filled initials are drawn like a signature — the adopted image, or typed initials in the signature font
+      .with(FieldType.INITIALS, () =>
+        field.inserted && field.customText
+          ? renderSignatureFieldElement(
+              {
+                ...field,
+                signature: isBase64Image(field.customText)
+                  ? { signatureImageAsBase64: field.customText, typedSignature: null }
+                  : { signatureImageAsBase64: null, typedSignature: field.customText },
+              } as FieldToRender,
+              options,
+            )
+          : renderGenericTextFieldElement(field, options),
+      )
+      .with(FieldType.NAME, FieldType.EMAIL, FieldType.DATE, FieldType.TEXT, FieldType.NUMBER, () =>
+        renderGenericTextFieldElement(field, options),
+      )
+      .with(FieldType.CHECKBOX, () => renderCheckboxFieldElement(field, options))
+      .with(FieldType.RADIO, () => renderRadioFieldElement(field, options))
+      .with(FieldType.DROPDOWN, () => renderDropdownFieldElement(field, options))
+      .with(FieldType.SIGNATURE, () => renderSignatureFieldElement(field, options))
+      .with(FieldType.FREE_SIGNATURE, () => {
+        throw new Error('Free signature fields are not supported');
+      })
+      .exhaustive()
+  );
 };

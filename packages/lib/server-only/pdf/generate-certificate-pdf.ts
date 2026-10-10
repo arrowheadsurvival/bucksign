@@ -32,6 +32,8 @@ export type GenerateCertificatePdfOptions = {
   recipients: Recipient[];
   fields: (Pick<Field, 'id' | 'type' | 'secondaryId' | 'recipientId'> & {
     signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
+    customText?: string | null;
+    inserted?: boolean;
   })[];
   language?: string;
   pageWidth: number;
@@ -63,6 +65,23 @@ export const generateCertificatePdf = async (options: GenerateCertificatePdfOpti
       const signatureField = fields.find(
         (field) => field.recipientId === recipient.id && field.type === FieldType.SIGNATURE,
       );
+
+      // (10-10) the initials they adopted (drawn / uploaded image, or typed) — shown under their signature
+      const initialsField = fields.find(
+        (field) =>
+          field.recipientId === recipient.id && field.type === FieldType.INITIALS && field.inserted && field.customText,
+      );
+
+      // (10-10) "Initial all": the boxes this signer filled at once, when, and from where
+      const bulkLogs = sortBy(
+        auditLogs.DOCUMENT_FIELD_INSERTED.filter(
+          (log) => log.data.recipientId === recipient.id && (log.data as { bulkInitials?: boolean }).bulkInitials,
+        ),
+        [prop('createdAt'), 'asc'],
+      );
+      const initialedAll = bulkLogs.length
+        ? { count: bulkLogs.length, at: bulkLogs[0].createdAt, ipAddress: bulkLogs[0].ipAddress ?? null }
+        : null;
 
       const emailSent: TDocumentAuditLogBaseSchema | undefined = auditLogs['EMAIL_SENT'].find(
         (log) => log.type === 'EMAIL_SENT' && log.data.recipientId === recipientId,
@@ -124,6 +143,8 @@ export const generateCertificatePdf = async (options: GenerateCertificatePdfOpti
         role: recipient.role,
         signingStatus: recipient.signingStatus,
         signatureField,
+        initials: initialsField?.customText ?? null,
+        initialedAll,
         rejectionReason: recipient.rejectionReason,
         authLevel,
         logs: {

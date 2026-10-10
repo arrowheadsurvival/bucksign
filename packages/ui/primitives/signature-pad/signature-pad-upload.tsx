@@ -10,7 +10,7 @@ import { match } from 'ts-pattern';
 
 import { cn } from '../../lib/utils';
 import { useToast } from '../use-toast';
-import { checkSignatureValidity } from './helper';
+import { checkSignatureValidity, INITIALS_MIN_COVERAGE } from './helper';
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
@@ -74,9 +74,17 @@ export type SignaturePadUploadProps = {
   className?: string;
   value: string;
   onChange: (_signatureDataUrl: string) => void;
+  /** (10-10) initials are small marks — they need far less ink than a signature to count */
+  kind?: 'signature' | 'initials';
 };
 
-export const SignaturePadUpload = ({ className, value, onChange, ...props }: SignaturePadUploadProps) => {
+export const SignaturePadUpload = ({
+  className,
+  value,
+  onChange,
+  kind = 'signature',
+  ...props
+}: SignaturePadUploadProps) => {
   const { t } = useLingui();
   const { toast } = useToast();
 
@@ -160,7 +168,7 @@ export const SignaturePadUpload = ({ className, value, onChange, ...props }: Sig
       return;
     }
 
-    const isValid = checkSignatureValidity($el);
+    const isValid = checkSignatureValidity($el, kind === 'initials' ? INITIALS_MIN_COVERAGE : undefined);
 
     setIsSignatureValid(isValid);
 
@@ -422,7 +430,7 @@ export const SignaturePadUpload = ({ className, value, onChange, ...props }: Sig
       {isSignatureValid === false && (
         <div className="absolute bottom-4 left-4 flex gap-2">
           <span className="text-destructive text-xs">
-            <Trans>Signature is too small</Trans>
+            {kind === 'initials' ? 'Initials are too small' : <Trans>Signature is too small</Trans>}
           </span>
         </div>
       )}

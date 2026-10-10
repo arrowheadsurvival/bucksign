@@ -31,6 +31,8 @@ export type SignaturePadProps = Omit<HTMLAttributes<HTMLCanvasElement>, 'onChang
   drawSignatureEnabled?: boolean;
 
   onValidityChange?: (isValid: boolean) => void;
+  /** (10-10) 'initials' accepts smaller drawings and says "Initials" */
+  kind?: 'signature' | 'initials';
 };
 
 export const SignaturePad = ({
@@ -41,6 +43,7 @@ export const SignaturePad = ({
   typedSignatureEnabled = true,
   uploadSignatureEnabled = true,
   drawSignatureEnabled = true,
+  kind = 'signature',
 }: SignaturePadProps) => {
   const [imageSignature, setImageSignature] = useState(isBase64Image(value) ? value : '');
   const [drawSignature, setDrawSignature] = useState(isBase64Image(value) ? value : '');
@@ -171,7 +174,12 @@ export const SignaturePad = ({
         value="draw"
         className="relative flex aspect-signature-pad items-center justify-center rounded-md border border-border bg-white text-center"
       >
-        <SignaturePadDraw className="h-full w-full" onChange={onDrawSignatureChange} value={drawSignature} />
+        <SignaturePadDraw
+          className="h-full w-full"
+          onChange={onDrawSignatureChange}
+          value={drawSignature}
+          kind={kind}
+        />
       </TabsContent>
 
       <TabsContent
@@ -187,7 +195,7 @@ export const SignaturePad = ({
           'bg-background': imageSignature,
         })}
       >
-        <SignaturePadUpload value={imageSignature} onChange={onImageSignatureChange} />
+        <SignaturePadUpload value={imageSignature} onChange={onImageSignatureChange} kind={kind} />
       </TabsContent>
     </Tabs>
   );

@@ -18,7 +18,7 @@ export const signEnvelopeFieldRoute = procedure
   .output(ZSignEnvelopeFieldResponseSchema)
   .mutation(async ({ input, ctx }) => {
     const { user, metadata } = ctx;
-    const { token, fieldId, fieldValue, authOptions } = input;
+    const { token, fieldId, fieldValue, authOptions, bulkInitials } = input;
 
     ctx.logger.info({
       input: {
@@ -278,6 +278,7 @@ export const signEnvelopeFieldRoute = procedure
                   type: derivedRecipientActionAuth,
                 }
               : undefined,
+            ...(bulkInitials && updatedField.type === FieldType.INITIALS ? { bulkInitials: true } : {}),
           },
         }),
       });

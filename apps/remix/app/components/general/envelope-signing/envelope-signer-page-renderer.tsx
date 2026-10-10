@@ -29,7 +29,7 @@ import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { useEffect, useMemo, useRef } from 'react';
 import { match } from 'ts-pattern';
-
+import { SignFieldInitialAllDialog } from '~/components/dialogs/sign-field-initial-all-dialog';
 import { useEmbedSigningContext } from '~/components/embed/embed-signing-context';
 import { handleCheckboxFieldClick } from '~/utils/field-signing/checkbox-field';
 import { handleDropdownFieldClick } from '~/utils/field-signing/dropdown-field';
@@ -71,6 +71,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     recipientFields,
     recipientFieldsRemaining,
     showPendingFieldTooltip,
+    setShowPendingFieldTooltip,
     signField: signFieldInternal,
     email: emailState,
     setEmail,
@@ -78,6 +79,8 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     setFullName,
     signature: signatureState,
     setSignature,
+    initials: initialsState,
+    setInitials,
     selectedAssistantRecipientFields,
     selectedAssistantRecipient,
     isDirectTemplate,
@@ -87,12 +90,15 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
   const fullName = useRef(fullNameState);
   const email = useRef(emailState);
   const signature = useRef(signatureState);
+  const initialsRef = useRef(initialsState);
+  const askedInitialAll = useRef(false);
 
   useEffect(() => {
     fullName.current = fullNameState;
     email.current = emailState;
     signature.current = signatureState;
-  }, [fullNameState, emailState, signatureState]);
+    initialsRef.current = initialsState;
+  }, [fullNameState, emailState, signatureState, initialsState]);
 
   // (10-08) every box of this signer (all pages), for "change one, change them all".
   const allRecipientFields = useRef(recipientFields);
@@ -333,13 +339,77 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
          * INITIALS FIELD.
          */
         .with({ type: FieldType.INITIALS }, (field) => {
-          const initials = localFullName ? extractInitials(localFullName) : null;
-
-          void handleInitialsFieldClick({ field, initials })
+          // (10-10) adopted initials (drawn / typed / uploaded) fill the box; a redraw replaces every initials box
+          void handleInitialsFieldClick({
+            field,
+            initials: initialsRef.current,
+            suggested: localFullName ? extractInitials(localFullName) : '',
+            typedSignatureEnabled: envelope.documentMeta.typedSignatureEnabled,
+            uploadSignatureEnabled: envelope.documentMeta.uploadSignatureEnabled,
+            drawSignatureEnabled: envelope.documentMeta.drawSignatureEnabled,
+          })
             .then(async (payload) => {
-              if (payload) {
-                fieldGroup.add(loadingSpinnerGroup);
-                await signField(field.id, payload);
+              if (!payload) {
+                return;
+              }
+
+              const wasRedraw = field.inserted;
+
+              // (10-10) the first initials box: offer to initial all of them at once (asked once per visit)
+              const emptyInitials = allRecipientFields.current.filter(
+                (f) => f.type === FieldType.INITIALS && !f.inserted && !f.fieldMeta?.readOnly,
+              );
+              // counts the EMPTY boxes left — a signer who already initialled some (or came back later) is still asked
+              const someDone = allRecipientFields.current.some((f) => f.type === FieldType.INITIALS && f.inserted);
+
+              if (!wasRedraw && payload.value && !askedInitialAll.current && emptyInitials.length > 1) {
+                askedInitialAll.current = true;
+                const pages = [...new Set(emptyInitials.map((f) => f.page))].sort((a, b) => a - b);
+                const all = await SignFieldInitialAllDialog.call({
+                  count: emptyInitials.length,
+                  pages,
+                  remaining: someDone,
+                });
+
+                if (all) {
+                  fieldGroup.add(loadingSpinnerGroup);
+
+                  for (const f of [field, ...emptyInitials.filter((x) => x.id !== field.id)]) {
+                    await signField(f.id, payload, undefined, { bulkInitials: true });
+                  }
+
+                  setInitials(payload.value);
+
+                  // on to the next box that isn't initials (signature, date, tick boxes)
+                  setShowPendingFieldTooltip(true);
+                  setTimeout(
+                    () =>
+                      document.querySelector('#field-tooltip')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+                    300,
+                  );
+
+                  return;
+                }
+              }
+
+              fieldGroup.add(loadingSpinnerGroup);
+              await signField(field.id, payload);
+
+              if (payload.value) {
+                if (wasRedraw) {
+                  for (const other of allRecipientFields.current) {
+                    if (
+                      other.id !== field.id &&
+                      other.type === FieldType.INITIALS &&
+                      other.inserted &&
+                      !other.fieldMeta?.readOnly
+                    ) {
+                      await signField(other.id, payload);
+                    }
+                  }
+                }
+
+                setInitials(payload.value);
               }
             })
             .finally(() => {
@@ -537,9 +607,14 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     }
   };
 
-  const signField = async (fieldId: number, payload: TSignEnvelopeFieldValue, authOptions?: TRecipientActionAuth) => {
+  const signField = async (
+    fieldId: number,
+    payload: TSignEnvelopeFieldValue,
+    authOptions?: TRecipientActionAuth,
+    options?: { bulkInitials?: boolean },
+  ) => {
     try {
-      const { inserted } = await signFieldInternal(fieldId, payload, authOptions);
+      const { inserted } = await signFieldInternal(fieldId, payload, authOptions, options);
 
       // ?: The two callbacks below are used within the embedding context
       if (inserted && onFieldSigned) {

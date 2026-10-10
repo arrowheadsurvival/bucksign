@@ -22,6 +22,9 @@ export type EnvelopeSigningContextValue = {
   setEmail: (_value: string) => void;
   signature: string | null;
   setSignature: (_value: string | null) => void;
+  /** (10-10) the signer's adopted initials — drawn/uploaded (image) or typed — used for every initials box. */
+  initials: string | null;
+  setInitials: (_value: string | null) => void;
 
   showPendingFieldTooltip: boolean;
   setShowPendingFieldTooltip: (_value: boolean) => void;
@@ -47,6 +50,7 @@ export type EnvelopeSigningContextValue = {
     _fieldId: number,
     _value: TSignEnvelopeFieldValue,
     authOptions?: TRecipientActionAuth,
+    options?: { bulkInitials?: boolean },
   ) => Promise<Pick<Field, 'id' | 'inserted'>>;
 };
 
@@ -194,6 +198,16 @@ export const EnvelopeSigningProvider = ({
     })(),
   );
 
+  // (10-10) adopted initials: start from a DRAWN/UPLOADED initials box this signer already filled (e.g. after a reload).
+  // Typed text in a box is not "adopted" — it may be old plain-text initials (pre-adopt build); counting it skipped the
+  // initials step. The signer adopts again instead.
+  const [initials, setInitials] = useState<string | null>(
+    () =>
+      envelopeData.recipient.fields.find(
+        (f) => f.type === FieldType.INITIALS && f.inserted && !!f.customText && isBase64Image(f.customText),
+      )?.customText ?? null,
+  );
+
   /**
    * The fields that are still required to be signed by the actual recipient.
    */
@@ -322,6 +336,7 @@ export const EnvelopeSigningProvider = ({
     fieldId: number,
     fieldValue: TSignEnvelopeFieldValue,
     authOptions?: TRecipientActionAuth,
+    options?: { bulkInitials?: boolean },
   ) => {
     // Set the field locally for direct templates.
     if (isDirectTemplate) {
@@ -335,6 +350,7 @@ export const EnvelopeSigningProvider = ({
       fieldId,
       fieldValue,
       authOptions,
+      ...(options?.bulkInitials ? { bulkInitials: true } : {}),
     });
 
     return signedField;
@@ -406,6 +422,8 @@ export const EnvelopeSigningProvider = ({
         setEmail,
         signature,
         setSignature,
+        initials,
+        setInitials,
         envelopeData,
         envelope,
 

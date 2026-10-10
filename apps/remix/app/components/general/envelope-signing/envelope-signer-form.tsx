@@ -1,10 +1,11 @@
+import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
 import { isSignatureFieldType } from '@documenso/prisma/guards/is-signature-field';
 import { Input } from '@documenso/ui/primitives/input';
 import { Label } from '@documenso/ui/primitives/label';
 import { RadioGroup, RadioGroupItem } from '@documenso/ui/primitives/radio-group';
 import { SignaturePadDialog } from '@documenso/ui/primitives/signature-pad/signature-pad-dialog';
 import { Plural, Trans } from '@lingui/react/macro';
-import { RecipientRole } from '@prisma/client';
+import { FieldType, RecipientRole } from '@prisma/client';
 import { useMemo } from 'react';
 
 import { useEmbedSigningContext } from '~/components/embed/embed-signing-context';
@@ -17,6 +18,8 @@ export default function EnvelopeSignerForm() {
     signature,
     setFullName,
     setSignature,
+    initials,
+    setInitials,
     envelope,
     recipientFields,
     recipient,
@@ -30,6 +33,10 @@ export default function EnvelopeSignerForm() {
 
   const hasSignatureField = useMemo(() => {
     return recipientFields.some((field) => isSignatureFieldType(field.type));
+  }, [recipientFields]);
+
+  const hasInitialsField = useMemo(() => {
+    return recipientFields.some((field) => field.type === FieldType.INITIALS);
   }, [recipientFields]);
 
   const isSubmitting = false;
@@ -118,6 +125,25 @@ export default function EnvelopeSignerForm() {
               fullName={fullName}
               value={signature ?? ''}
               onChange={(v) => setSignature(v ?? '')}
+              typedSignatureEnabled={envelope.documentMeta.typedSignatureEnabled}
+              uploadSignatureEnabled={envelope.documentMeta.uploadSignatureEnabled}
+              drawSignatureEnabled={envelope.documentMeta.drawSignatureEnabled}
+            />
+          </div>
+        )}
+
+        {/* (10-10) initials are adopted once, like the signature — drawn, typed or uploaded — and fill every initials box */}
+        {hasInitialsField && (
+          <div>
+            <Label htmlFor="Initials">Initials</Label>
+
+            <SignaturePadDialog
+              className="mt-2"
+              disabled={isSubmitting}
+              fullName={fullName ? extractInitials(fullName) : ''}
+              value={initials ?? ''}
+              onChange={(v) => setInitials(v || null)}
+              kind="initials"
               typedSignatureEnabled={envelope.documentMeta.typedSignatureEnabled}
               uploadSignatureEnabled={envelope.documentMeta.uploadSignatureEnabled}
               drawSignatureEnabled={envelope.documentMeta.drawSignatureEnabled}

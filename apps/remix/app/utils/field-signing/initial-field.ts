@@ -2,18 +2,28 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TFieldInitials } from '@documenso/lib/types/field';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
 import { FieldType } from '@prisma/client';
-import { SignFieldInitialsDialog } from '~/components/dialogs/sign-field-initials-dialog';
-import { TypedFieldDialog } from '~/components/dialogs/typed-field-dialog';
+
+import { SignFieldSignatureDialog } from '~/components/dialogs/sign-field-signature-dialog';
 
 type HandleInitialsFieldClickOptions = {
   field: TFieldInitials;
+  /** the signer's adopted initials (image or typed); null = not adopted yet */
   initials: string | null;
+  /** typed-tab default, e.g. "CB" from their full name */
+  suggested?: string;
+  typedSignatureEnabled?: boolean;
+  uploadSignatureEnabled?: boolean;
+  drawSignatureEnabled?: boolean;
 };
 
+/**
+ * * Initials are adopted once, on the same pad as the signature. A click on an empty box fills it with the adopted
+ * initials; a click on a filled box redraws them (the caller then replaces every initials box of this signer).
+ */
 export const handleInitialsFieldClick = async (
   options: HandleInitialsFieldClickOptions,
 ): Promise<Extract<TSignEnvelopeFieldValue, { type: typeof FieldType.INITIALS }> | null> => {
-  const { field, initials } = options;
+  const { field, initials, suggested, typedSignatureEnabled, uploadSignatureEnabled, drawSignatureEnabled } = options;
 
   if (field.type !== FieldType.INITIALS) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
@@ -21,38 +31,23 @@ export const handleInitialsFieldClick = async (
     });
   }
 
-  // (10-08) a filled box opens for editing (with what's in it) — never wiped on click.
-  if (field.inserted) {
-    const result = await TypedFieldDialog.call({
-      info: { kind: 'text', title: 'Your initials', help: 'The initials of your full name.' },
-      current: field.customText || '',
-      original: null,
-      required: field.fieldMeta?.required !== false,
+  const pad = (redraw: boolean) =>
+    SignFieldSignatureDialog.call({
+      kind: 'initials',
+      redraw,
+      fullName: suggested,
+      typedSignatureEnabled,
+      uploadSignatureEnabled,
+      drawSignatureEnabled,
     });
 
-    if (!result) {
-      return null;
-    }
+  if (field.inserted) {
+    const redrawn = await pad(true);
 
-    if ('clear' in result) {
-      return { type: FieldType.INITIALS, value: null };
-    }
-
-    return result.value === field.customText ? null : { type: FieldType.INITIALS, value: result.value };
+    return redrawn ? { type: FieldType.INITIALS, value: redrawn } : null;
   }
 
-  let initialsToInsert = initials;
+  const value = initials || (await pad(false));
 
-  if (!initialsToInsert) {
-    initialsToInsert = await SignFieldInitialsDialog.call({});
-  }
-
-  if (!initialsToInsert) {
-    return null;
-  }
-
-  return {
-    type: FieldType.INITIALS,
-    value: initialsToInsert,
-  };
+  return value ? { type: FieldType.INITIALS, value } : null;
 };

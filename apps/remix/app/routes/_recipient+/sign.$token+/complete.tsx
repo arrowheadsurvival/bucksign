@@ -20,11 +20,10 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, FieldType, RecipientRole } from '@prisma/client';
 import { CheckCircle2, Clock8, DownloadIcon, Loader2 } from 'lucide-react';
-import { Link } from 'react-router';
 import { match } from 'ts-pattern';
-
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { ClaimAccount } from '~/components/general/claim-account';
+import { CloseTabButton } from '~/components/general/close-tab-button';
 import { DocumentSigningAuthPageView } from '~/components/general/document-signing/document-signing-auth-page';
 import { RecipientBranding } from '~/components/general/recipient-branding';
 import { useCspNonce } from '~/utils/nonce';
@@ -270,13 +269,8 @@ export default function CompletedSigningPage({ loaderData }: Route.ComponentProp
                 />
               )}
 
-              {user && (
-                <Button asChild>
-                  <Link to={returnToHomePath}>
-                    <Trans>Go Back Home</Trans>
-                  </Link>
-                </Button>
-              )}
+              {/* (10-10) Close, not "Go Back Home" — nobody is sent into the signing site from here */}
+              <CloseTabButton />
             </div>
           </div>
 

@@ -73,6 +73,18 @@ export const extractFieldInsertionValues = ({
         };
       }
 
+      // (10-10) initials are adopted like a signature: a drawn/uploaded PNG, or short typed initials
+      if (fieldValue.type === FieldType.INITIALS) {
+        const v = parsedGenericStringValue.data;
+        const ok = isBase64Image(v) ? v.length <= 2_000_000 : v.trim().length > 0 && v.length <= 20;
+
+        if (!ok) {
+          throw new AppError(AppErrorCode.INVALID_BODY, {
+            message: 'Initials must be drawn, uploaded, or typed (up to 20 characters)',
+          });
+        }
+      }
+
       return {
         customText: parsedGenericStringValue.data,
         inserted: true,
