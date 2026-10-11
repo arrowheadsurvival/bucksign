@@ -131,6 +131,8 @@ declare namespace NodeJS {
      * Cloudflare Turnstile environment variables
      */
     NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string;
+    /** Where this deployment's source code is published (AGPL-3.0 section 13). Falls back to upstream Documenso. */
+    NEXT_PUBLIC_SOURCE_CODE_URL?: string;
     NEXT_PRIVATE_TURNSTILE_SECRET_KEY?: string;
 
     /**

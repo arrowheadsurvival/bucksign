@@ -1,5 +1,6 @@
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
+import { env } from '@documenso/lib/utils/env';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
 import { i18n } from '@lingui/core';
@@ -45,6 +46,17 @@ export default function RecipientLayout({ matches }: Route.ComponentProps) {
       >
         <Outlet />
       </main>
+
+      {/* AGPL-3.0 section 13: everyone who uses the signing site can get its source code */}
+      <a
+        href={env('NEXT_PUBLIC_SOURCE_CODE_URL') || 'https://github.com/documenso/documenso'}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="source-code-link"
+        className="fixed right-2 bottom-1 z-30 text-[11px] text-muted-foreground/70 hover:text-muted-foreground hover:underline"
+      >
+        Source code
+      </a>
     </div>
   );
 }
