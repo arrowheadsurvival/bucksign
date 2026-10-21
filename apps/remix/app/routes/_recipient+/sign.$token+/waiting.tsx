@@ -56,10 +56,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       .catch(() => false);
 
     if (document.teamId) {
+      // A signed-in user who isn't on the document's team (staff signing a document an API account sent) must
+      // still see the waiting page: getTeamById throws "Team not found" for them, which 500'd the whole page.
       team = await getTeamById({
         userId: user.id,
         teamId: document.teamId,
-      });
+      }).catch(() => null);
     }
   }
 
